@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlipCollab – Tableau partagé</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f172a; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+
+  #canvas { display: block; touch-action: none; cursor: crosshair; }
+
+  /* HUD top */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; height: 64px;
+    background: rgba(15,23,42,0.92); backdrop-filter: blur(8px);
+    border-bottom: 2px solid #1e40af;
+    display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 100;
+  }
+  .logo { font-size: 22px; font-weight: 800; color: #60a5fa; letter-spacing: -0.5px; }
+  .logo span { color: #34d399; }
+  #session-info { color: #94a3b8; font-size: 13px; }
+
+  /* Utilisateurs connectés */
+  #users-bar {
+    display: flex; gap: 8px; align-items: center; margin-left: auto;
+  }
+  .user-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.08); border-radius: 20px;
+    padding: 4px 10px 4px 6px; font-size: 13px; color: #e2e8f0;
+    transition: all .3s;
+  }
+  .user-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Barre outils */
+  #toolbar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(15,23,42,0.95); border: 1px solid #334155;
+    border-radius: 16px; padding: 10px 16px;
+    display: flex; gap: 12px; align-items: center; z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .tool-btn {
+    width: 44px; height: 44px; border-radius: 10px; border: none;
+    background: rgba(255,255,255,0.07); color: #e2e8f0;
+    font-size: 20px; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tool-btn:hover, .tool-btn.active { background: #1e40af; transform: scale(1.1); }
+  .size-slider {
+    -webkit-appearance: none; width: 80px; height: 4px;
+    background: #334155; border-radius: 2px; outline: none;
+  }
+  .size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: #60a5fa; cursor: pointer;
+  }
+  .sep { width: 1px; height: 32px; background: #334155; }
+
+  /* QR Panel */
+  #qr-panel {
+    position: fixed; right: 24px; top: 80px;
+    background: rgba(15,23,42,0.97); border: 1px solid #1e40af;
+    border-radius: 16px; padding: 20px; text-align: center;
+    z-index: 100; width: 200px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    transition: opacity .3s;
+  }
+  #qr-panel h3 { color: #60a5fa; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  #qr-canvas { border-radius: 8px; background: #ffffff; padding: 8px; display: block; }
+  #join-url { color: #94a3b8; font-size: 10px; margin-top: 8px; word-break: break-all; }
+  #toggle-qr {
+    position: fixed; right: 24px; top: 80px;
+    width: 44px; height: 44px; border-radius: 10px;
+    background: #1e40af; border: none; color: white;
+    font-size: 20px; cursor: pointer; z-index: 101;
+    display: none;
+  }
+
+  /* Pointeurs distants */
+  .remote-pointer {
+    position: fixed; pointer-events: none; z-index: 200;
+    transition: left .08s, top .08s;
+  }
+  .remote-pointer-dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 3px solid white; opacity: 0.9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .remote-pointer-label {
+    font-size: 11px; color: white; background: rgba(0,0,0,0.6);
+    padding: 2px 6px; border-radius: 4px; margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  /* Toast notifications */
+  #toast-container { position: fixed; top: 80px; left: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: rgba(30,64,175,0.95); color: white;
+    padding: 10px 16px; border-radius: 10px; font-size: 14px;
+    animation: slideIn .3s ease, fadeOut .3s ease 2.7s forwards;
+    border-left: 3px solid #34d399;
+  }
+  @keyframes slideIn { from { opacity:0; transform: translateX(-20px); } to { opacity:1; transform: translateX(0); } }
+  @keyframes fadeOut { to { opacity: 0; transform: translateX(-20px); } }
+
+  #status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+    transition: background .5s;
+  }
+  #status-dot.connected { background: #34d399; }
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="logo">Flip<span>Collab</span></div>
+  <div id="status-dot"></div>
+  <div id="session-info">Session : default</div>
+  <div id="users-bar"></div>
+</div>
+
+<!-- Canvas principal -->
+<canvas id="canvas"></canvas>
+
+<!-- Barre d'outils -->
+<div id="toolbar">
+  <button class="tool-btn active" id="btn-pen" title="Stylo">✏️</button>
+  <button class="tool-btn" id="btn-marker" title="Marqueur">🖊️</button>
+  <button class="tool-btn" id="btn-eraser" title="Gomme">🧹</button>
+  <div class="sep"></div>
+  <input type="range" class="size-slider" id="size-slider" min="2" max="40" value="4">
+  <div class="sep"></div>
+  <button class="tool-btn" id="btn-undo" title="Annuler">↩️</button>
+  <button class="tool-btn" id="btn-clear" title="Tout effacer">🗑️</button>
+  <div class="sep"></div>
+  <button class="tool-btn" id="btn-save" title="Sauvegarder PNG">💾</button>
+</div>
+
+<!-- QR Code -->
+<div id="qr-panel">
+  <h3>📱 Rejoindre</h3>
+  <canvas id="qr-canvas" width="156" height="156"></canvas>
+  <div id="join-url"></div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Pointeurs distants (injectés dynamiquement) -->
+
+<script src="/qr.js"></script>
+<script>
+// ── Config ────────────────────────────────────────────────────
+const SESSION_ID = 'default';
+const WS_PROTO = location.protocol === 'https:' ? 'wss://' : 'ws://';
+const WS_URL = `${WS_PROTO}${location.host}/ws?session=${SESSION_ID}&uid=flip-display&name=Flip`;
+
+// ── Canvas setup ──────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const oldData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.putImageData(oldData, 0, 0);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Tools ─────────────────────────────────────────────────────
+let tool = 'pen';       // pen | marker | eraser
+let brushSize = 4;
+let drawing = false;
+let lastX = 0, lastY = 0;
+let currentStroke = null;
+
+document.getElementById('btn-pen').onclick    = () => setTool('pen');
+document.getElementById('btn-marker').onclick = () => setTool('marker');
+document.getElementById('btn-eraser').onclick = () => setTool('eraser');
+document.getElementById('size-slider').oninput = e => { brushSize = +e.target.value; };
+document.getElementById('btn-undo').onclick   = () => ws && ws.readyState===1 && ws.send(JSON.stringify({ type:'undo' }));
+document.getElementById('btn-clear').onclick  = () => { if(confirm('Effacer tout le tableau ?')) ws && ws.send(JSON.stringify({ type:'clear' })); };
+document.getElementById('btn-save').onclick   = saveImage;
+
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + t).classList.add('active');
+}
+
+// ── Draw locally ──────────────────────────────────────────────
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const touch = e.touches ? e.touches[0] : e;
+  return [touch.clientX - r.left, touch.clientY - r.top];
+}
+
+function drawSegment(x0, y0, x1, y1, color, size, opacity) {
+  ctx.globalAlpha = opacity;
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = size;
+  ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+canvas.addEventListener('pointerdown', e => {
+  if (e.target !== canvas) return;
+  drawing = true;
+  [lastX, lastY] = getPos(e);
+  currentStroke = { points: [[lastX, lastY]], tool, size: brushSize, color: '#FFFFFF' };
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  const [x, y] = getPos(e);
+  const opacity = tool === 'marker' ? 0.4 : 1;
+  drawSegment(lastX, lastY, x, y, tool === 'eraser' ? '#000' : '#FFFFFF', brushSize, opacity);
+  currentStroke.points.push([x, y]);
+  lastX = x; lastY = y;
+});
+
+canvas.addEventListener('pointerup', () => {
+  if (!drawing || !currentStroke) return;
+  drawing = false;
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'stroke', data: currentStroke }));
+  }
+  currentStroke = null;
+});
+
+// ── Redraw all strokes ────────────────────────────────────────
+function redrawAll(strokes) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const s of strokes) drawStroke(s);
+}
+
+function drawStroke(s) {
+  if (!s.points || s.points.length < 2) return;
+  const opacity = s.tool === 'marker' ? 0.4 : 1;
+  const composite = s.tool === 'eraser' ? 'destination-out' : 'source-over';
+  ctx.globalAlpha = opacity;
+  ctx.strokeStyle = s.color || '#FFFFFF';
+  ctx.lineWidth   = s.size || 4;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.globalCompositeOperation = composite;
+  ctx.beginPath();
+  ctx.moveTo(s.points[0][0], s.points[0][1]);
+  for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ── WebSocket ─────────────────────────────────────────────────
+let ws;
+const statusDot = document.getElementById('status-dot');
+const pointers  = {};
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    statusDot.classList.add('connected');
+    console.log('WS connecté');
+  };
+
+  ws.onmessage = ({ data }) => {
+    const msg = JSON.parse(data);
+
+    if (msg.type === 'init') {
+      redrawAll(msg.strokes);
+      updateUsers(msg.users);
+    } else if (msg.type === 'stroke') {
+      drawStroke(msg.stroke);
+    } else if (msg.type === 'redraw') {
+      redrawAll(msg.strokes);
+    } else if (msg.type === 'clear') {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    } else if (msg.type === 'pointer') {
+      updatePointer(msg);
+    } else if (msg.type === 'user_join') {
+      updateUsers(msg.users);
+      if (!msg.userId.startsWith('flip')) toast(`${msg.name} a rejoint 🎉`);
+    } else if (msg.type === 'user_leave') {
+      updateUsers(msg.users);
+      removePointer(msg.userId);
+    }
+  };
+
+  ws.onclose = () => {
+    statusDot.classList.remove('connected');
+    setTimeout(connect, 2000);
+  };
+}
+connect();
+
+// ── Users bar ──────────────────────────────────────────────────
+function updateUsers(users) {
+  const bar = document.getElementById('users-bar');
+  bar.innerHTML = '';
+  for (const [uid, u] of Object.entries(users)) {
+    if (uid.startsWith('flip')) continue;
+    const pill = document.createElement('div');
+    pill.className = 'user-pill';
+    pill.innerHTML = `<div class="user-dot" style="background:${u.color}"></div>${u.name}`;
+    bar.appendChild(pill);
+  }
+}
+
+// ── Remote pointers ────────────────────────────────────────────
+function updatePointer(msg) {
+  if (msg.userId.startsWith('flip')) return;
+  if (!pointers[msg.userId]) {
+    const el = document.createElement('div');
+    el.className = 'remote-pointer';
+    el.id = 'ptr-' + msg.userId;
+    el.innerHTML = `<div class="remote-pointer-dot" style="background:${msg.color}"></div>
+                    <div class="remote-pointer-label">${msg.name}</div>`;
+    document.body.appendChild(el);
+    pointers[msg.userId] = el;
+  }
+  const el = pointers[msg.userId];
+  el.style.left = (msg.x * window.innerWidth)  + 'px';
+  el.style.top  = (msg.y * window.innerHeight) + 'px';
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.style.opacity = '0', 3000);
+  el.style.opacity = '1';
+}
+
+function removePointer(uid) {
+  if (pointers[uid]) { pointers[uid].remove(); delete pointers[uid]; }
+}
+
+// ── QR Code (via service externe fiable) ──────────────────────
+fetch('/api/session?id=' + SESSION_ID).then(r => r.json()).then(data => {
+  const joinUrl = data.joinUrl;
+  document.getElementById('join-url').textContent = joinUrl;
+  // Remplace le canvas par une image QR générée par api.qrserver.com
+  const panel = document.getElementById('qr-canvas');
+  const img = document.createElement('img');
+  img.width = 156; img.height = 156;
+  img.style.borderRadius = '8px';
+  img.style.background = '#fff';
+  img.style.padding = '8px';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=156x156&data=' + encodeURIComponent(joinUrl);
+  panel.replaceWith(img);
+});
+
+// ── Toast ──────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ── Save ───────────────────────────────────────────────────────
+function saveImage() {
+  const link = document.createElement('a');
+  link.download = `flipcollab-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  toast('Image sauvegardée ✅');
+}
+</script>
+</body>
+</html>

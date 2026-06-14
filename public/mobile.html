@@ -298,7 +298,8 @@ function setTool(t) {
 
 // ── WebSocket ──────────────────────────────────────────────────
 function connect() {
-  const wsUrl = `ws://${location.host}/ws?session=${SESSION_ID}&uid=${MY_UID}&name=${encodeURIComponent(myName)}`;
+  const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+  const wsUrl = `${wsProto}${location.host}/ws?session=${SESSION_ID}&uid=${MY_UID}&name=${encodeURIComponent(myName)}`;
   ws = new WebSocket(wsUrl);
   const status = document.getElementById('conn-status');
 
