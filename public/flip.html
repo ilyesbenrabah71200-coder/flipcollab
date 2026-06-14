@@ -68,7 +68,7 @@
     transition: opacity .3s;
   }
   #qr-panel h3 { color: #60a5fa; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
-  #qr-canvas { border-radius: 8px; background: white; padding: 8px; }
+  #qr-canvas { border-radius: 8px; background: #ffffff; padding: 8px; display: block; }
   #join-url { color: #94a3b8; font-size: 10px; margin-top: 8px; word-break: break-all; }
   #toggle-qr {
     position: fixed; right: 24px; top: 80px;
@@ -155,7 +155,8 @@
 <script>
 // ── Config ────────────────────────────────────────────────────
 const SESSION_ID = 'default';
-const WS_URL = `ws://${location.host}/ws?session=${SESSION_ID}&uid=flip-display&name=Flip`;
+const WS_PROTO = location.protocol === 'https:' ? 'wss://' : 'ws://';
+const WS_URL = `${WS_PROTO}${location.host}/ws?session=${SESSION_ID}&uid=flip-display&name=Flip`;
 
 // ── Canvas setup ──────────────────────────────────────────────
 const canvas = document.getElementById('canvas');
@@ -340,14 +341,19 @@ function removePointer(uid) {
   if (pointers[uid]) { pointers[uid].remove(); delete pointers[uid]; }
 }
 
-// ── QR Code ────────────────────────────────────────────────────
+// ── QR Code (via service externe fiable) ──────────────────────
 fetch('/api/session?id=' + SESSION_ID).then(r => r.json()).then(data => {
   const joinUrl = data.joinUrl;
   document.getElementById('join-url').textContent = joinUrl;
-  QRCode.toCanvas(document.getElementById('qr-canvas'), joinUrl, {
-    width: 156, margin: 1,
-    color: { dark: '#0f172a', light: '#ffffff' }
-  });
+  // Remplace le canvas par une image QR générée par api.qrserver.com
+  const panel = document.getElementById('qr-canvas');
+  const img = document.createElement('img');
+  img.width = 156; img.height = 156;
+  img.style.borderRadius = '8px';
+  img.style.background = '#fff';
+  img.style.padding = '8px';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=156x156&data=' + encodeURIComponent(joinUrl);
+  panel.replaceWith(img);
 });
 
 // ── Toast ──────────────────────────────────────────────────────
