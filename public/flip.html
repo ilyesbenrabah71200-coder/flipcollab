@@ -2,422 +2,294 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FlipCollab – Interface Professeur</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>FlipCollab – Élève</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#0f172a; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#0f172a; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; height:100dvh; display:flex; flex-direction:column; }
+
+  #welcome { position:fixed; inset:0; background:#0f172a; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:20px; padding:32px; z-index:999; }
+  .logo-big { font-size:36px; font-weight:900; color:#60a5fa; }
+  .logo-big span { color:#34d399; }
+  .subtitle { color:#64748b; font-size:15px; text-align:center; }
+  #name-input { width:100%; padding:16px; border-radius:12px; border:2px solid #1e40af;
+    background:#1e293b; color:#fff; font-size:18px; text-align:center; outline:none; }
+  #name-input:focus { border-color:#60a5fa; }
+  #join-btn { width:100%; padding:16px; border-radius:12px;
+    background:linear-gradient(135deg,#1e40af,#3b82f6); border:none; color:#fff;
+    font-size:18px; font-weight:700; cursor:pointer; transition:transform .15s; }
+  #join-btn:active { transform:scale(.97); }
+
+  #header { background:rgba(15,23,42,.98); border-bottom:2px solid #1e40af;
+    padding:10px 16px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .logo-sm { font-size:16px; font-weight:800; color:#60a5fa; }
+  .logo-sm span { color:#34d399; }
+  #my-color-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  #my-name-label { color:#e2e8f0; font-size:14px; flex:1; }
+  #conn-status { font-size:11px; color:#64748b; }
+  #conn-status.ok { color:#34d399; }
+
+  #lock-banner { display:none; background:#ef4444; color:#fff; text-align:center;
+    padding:8px; font-size:14px; font-weight:600; flex-shrink:0; }
+  #lock-banner.show { display:block; }
+
+  #canvas-wrap { flex:1; position:relative; overflow:hidden; }
   #canvas { display:block; touch-action:none; cursor:crosshair; }
+  #canvas.locked { opacity:.5; pointer-events:none; }
 
-  #hud {
-    position:fixed; top:0; left:0; right:0; height:60px;
-    background:rgba(15,23,42,0.92); backdrop-filter:blur(8px);
-    border-bottom:2px solid #1e40af; display:flex; align-items:center;
-    padding:0 20px; gap:14px; z-index:100;
-  }
-  .logo { font-size:20px; font-weight:800; color:#60a5fa; }
-  .logo span { color:#34d399; }
-  .badge-prof { background:#7c3aed; color:#fff; font-size:11px; font-weight:700;
-    padding:3px 8px; border-radius:6px; letter-spacing:.5px; }
-  #session-info { color:#94a3b8; font-size:13px; }
-  #lock-status { font-size:13px; font-weight:600; padding:4px 10px; border-radius:6px; }
-  #lock-status.unlocked { background:rgba(52,211,153,.15); color:#34d399; }
-  #lock-status.locked { background:rgba(239,68,68,.15); color:#ef4444; }
-  #status-dot { width:8px; height:8px; border-radius:50%; background:#ef4444; transition:.5s; }
-  #status-dot.connected { background:#34d399; }
-
-  /* Panneau élèves */
-  #students-panel {
-    position:fixed; left:0; top:60px; bottom:0; width:230px;
-    background:rgba(15,23,42,0.96); border-right:1px solid #1e293b;
-    z-index:90; padding:16px 12px; overflow-y:auto;
-  }
-  #students-panel h3 { color:#60a5fa; font-size:12px; text-transform:uppercase;
-    letter-spacing:1px; margin-bottom:12px; }
-  .student-row {
-    display:flex; align-items:center; gap:8px; padding:8px 10px;
-    background:rgba(255,255,255,.04); border-radius:8px; margin-bottom:6px;
-    font-size:13px; color:#e2e8f0;
-  }
-  .student-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
-  .student-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .student-actions { display:flex; gap:4px; }
-  .mini-btn { width:24px; height:24px; border-radius:6px; border:none; cursor:pointer;
-    background:rgba(255,255,255,.08); color:#e2e8f0; font-size:12px;
-    display:flex; align-items:center; justify-content:center; }
-  .mini-btn:hover { background:#ef4444; }
-  .empty-students { color:#475569; font-size:12px; font-style:italic; text-align:center; padding:20px 0; }
-
-  /* Toolbar */
-  #toolbar {
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-    background:rgba(15,23,42,0.96); border:1px solid #334155; border-radius:16px;
-    padding:10px 16px; display:flex; gap:10px; align-items:center; z-index:100;
-    box-shadow:0 8px 32px rgba(0,0,0,.5);
-  }
-  .tool-btn { width:44px; height:44px; border-radius:10px; border:none;
-    background:rgba(255,255,255,.07); color:#e2e8f0; font-size:19px; cursor:pointer;
-    transition:.2s; display:flex; align-items:center; justify-content:center; }
-  .tool-btn:hover, .tool-btn.active { background:#1e40af; transform:scale(1.08); }
-  .tool-btn.lock-btn.locked { background:#ef4444; }
-  .size-slider { -webkit-appearance:none; width:80px; height:4px; background:#334155;
+  #toolbar { background:#0f172a; border-top:1px solid #1e293b; padding:10px 12px;
+    display:flex; gap:10px; align-items:center; flex-shrink:0; overflow-x:auto; }
+  .tbtn { min-width:44px; height:44px; border-radius:10px; border:none; background:#1e293b;
+    color:#e2e8f0; font-size:18px; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; transition:.15s; }
+  .tbtn.active { background:#1e40af; }
+  .tbtn:active { transform:scale(.9); }
+  #colors { display:flex; gap:8px; align-items:center; }
+  .color-dot { width:28px; height:28px; border-radius:50%; cursor:pointer;
+    border:3px solid transparent; transition:.15s; flex-shrink:0; }
+  .color-dot.selected { border-color:#fff; transform:scale(1.2); }
+  #size-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  #size-slider { -webkit-appearance:none; width:70px; height:4px; background:#334155;
     border-radius:2px; outline:none; }
-  .size-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px;
-    border-radius:50%; background:#60a5fa; cursor:pointer; }
-  .sep { width:1px; height:32px; background:#334155; }
-  .color-pick { display:flex; gap:5px; }
-  .cdot { width:26px; height:26px; border-radius:50%; cursor:pointer;
-    border:3px solid transparent; transition:.15s; }
-  .cdot.sel { border-color:#fff; transform:scale(1.15); }
+  #size-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px;
+    border-radius:50%; background:#60a5fa; }
+  .sep { width:1px; height:32px; background:#334155; flex-shrink:0; }
 
-  /* QR */
-  #qr-panel { position:fixed; right:24px; top:76px; background:rgba(15,23,42,0.97);
-    border:1px solid #1e40af; border-radius:16px; padding:18px; text-align:center;
-    z-index:100; width:196px; box-shadow:0 8px 32px rgba(0,0,0,.6); }
-  #qr-panel h3 { color:#60a5fa; font-size:12px; margin-bottom:12px;
-    text-transform:uppercase; letter-spacing:1px; }
-  #qr-img { border-radius:8px; background:#fff; padding:8px; width:156px; height:156px; }
-  #join-url { color:#94a3b8; font-size:10px; margin-top:8px; word-break:break-all; }
-
-  /* Texte éléments */
-  .text-el { position:absolute; color:#fff; font-family:'Segoe UI',Arial;
-    cursor:move; padding:4px 8px; border-radius:6px; white-space:pre-wrap;
-    max-width:500px; user-select:none; z-index:50; }
-  .text-el.editing { background:rgba(30,64,175,.3); outline:2px dashed #60a5fa; }
-  .text-el .author-tag { font-size:10px; opacity:.5; display:block; }
-
-  /* Pointeurs */
-  .remote-pointer { position:fixed; pointer-events:none; z-index:200; transition:left .08s,top .08s; }
-  .remote-pointer-dot { width:20px; height:20px; border-radius:50%; border:3px solid #fff;
-    opacity:.9; box-shadow:0 2px 8px rgba(0,0,0,.4); }
-  .remote-pointer-label { font-size:11px; color:#fff; background:rgba(0,0,0,.6);
-    padding:2px 6px; border-radius:4px; margin-top:4px; white-space:nowrap; }
-
-  /* Toast */
-  #toast-container { position:fixed; top:70px; left:250px; z-index:300;
-    display:flex; flex-direction:column; gap:8px; }
-  .toast { background:rgba(30,64,175,.95); color:#fff; padding:10px 16px;
-    border-radius:10px; font-size:14px; border-left:3px solid #34d399;
-    animation:slideIn .3s ease, fadeOut .3s ease 2.7s forwards; }
-  @keyframes slideIn { from{opacity:0;transform:translateX(-20px);} to{opacity:1;transform:translateX(0);} }
-  @keyframes fadeOut { to{opacity:0;transform:translateX(-20px);} }
+  #users-mini { position:absolute; top:8px; right:8px; background:rgba(15,23,42,.85);
+    border-radius:10px; padding:6px 10px; display:flex; flex-direction:column; gap:4px;
+    font-size:11px; color:#94a3b8; pointer-events:none; }
+  .u-row { display:flex; align-items:center; gap:5px; }
+  .u-dot { width:8px; height:8px; border-radius:50%; }
 
   /* Modal texte */
-  #text-modal { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:500;
-    display:none; align-items:center; justify-content:center; }
+  #text-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:500;
+    display:none; align-items:center; justify-content:center; padding:20px; }
   #text-modal.show { display:flex; }
-  .modal-box { background:#1e293b; border-radius:16px; padding:24px; width:420px;
-    border:1px solid #334155; }
-  .modal-box h3 { color:#60a5fa; margin-bottom:16px; }
-  #text-input { width:100%; min-height:90px; padding:12px; border-radius:10px;
-    border:2px solid #334155; background:#0f172a; color:#fff; font-size:18px;
-    resize:vertical; outline:none; font-family:'Segoe UI',Arial; }
-  #text-input:focus { border-color:#60a5fa; }
-  .modal-actions { display:flex; gap:10px; margin-top:16px; justify-content:flex-end; }
-  .modal-btn { padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
-    font-size:15px; font-weight:600; }
+  .modal-box { background:#1e293b; border-radius:16px; padding:20px; width:100%; max-width:380px; border:1px solid #334155; }
+  .modal-box h3 { color:#60a5fa; margin-bottom:14px; }
+  #text-input-m { width:100%; min-height:80px; padding:12px; border-radius:10px;
+    border:2px solid #334155; background:#0f172a; color:#fff; font-size:18px; resize:vertical; outline:none; }
+  #text-input-m:focus { border-color:#60a5fa; }
+  .modal-actions { display:flex; gap:10px; margin-top:14px; }
+  .modal-btn { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-size:15px; font-weight:600; }
   .modal-btn.primary { background:#1e40af; color:#fff; }
   .modal-btn.cancel { background:#334155; color:#e2e8f0; }
-  .size-row { display:flex; gap:8px; align-items:center; margin-top:12px; color:#94a3b8; font-size:14px; }
+
+  .text-el { position:absolute; color:#fff; cursor:move; padding:2px 4px;
+    white-space:pre-wrap; max-width:90%; user-select:none; z-index:50; }
+  .text-el .author-tag { font-size:9px; opacity:.5; display:block; }
 </style>
 </head>
 <body>
 
-<div id="hud">
-  <div class="logo">Flip<span>Collab</span></div>
-  <span class="badge-prof">👨‍🏫 PROF</span>
-  <div id="status-dot"></div>
-  <div id="session-info">Session : default</div>
-  <div id="lock-status" class="unlocked">🔓 Tableau ouvert</div>
+<div id="welcome">
+  <div class="logo-big">Flip<span>Collab</span></div>
+  <div class="subtitle">Dessinez et écrivez sur le grand écran<br>depuis votre téléphone</div>
+  <input id="name-input" type="text" placeholder="Votre prénom" maxlength="20" autocomplete="off">
+  <button id="join-btn">Rejoindre 🚀</button>
 </div>
 
-<!-- Panneau élèves -->
-<div id="students-panel">
-  <h3>👥 Élèves connectés (<span id="student-count">0</span>)</h3>
-  <div id="students-list">
-    <div class="empty-students">Aucun élève connecté.<br>Partagez le QR code →</div>
-  </div>
+<div id="header" style="display:none">
+  <div class="logo-sm">Flip<span>Collab</span></div>
+  <div id="my-color-dot"></div>
+  <div id="my-name-label"></div>
+  <div id="conn-status">Connexion...</div>
 </div>
 
-<canvas id="canvas"></canvas>
+<div id="lock-banner">🔒 Le professeur a verrouillé le tableau</div>
 
-<!-- Toolbar -->
-<div id="toolbar">
-  <button class="tool-btn active" id="btn-pen" title="Stylo">✏️</button>
-  <button class="tool-btn" id="btn-marker" title="Marqueur">🖊️</button>
-  <button class="tool-btn" id="btn-text" title="Ajouter du texte">⌨️</button>
-  <button class="tool-btn" id="btn-eraser" title="Gomme">🧹</button>
-  <div class="sep"></div>
-  <div class="color-pick" id="color-pick"></div>
-  <div class="sep"></div>
-  <input type="range" class="size-slider" id="size-slider" min="2" max="40" value="4">
-  <div class="sep"></div>
-  <button class="tool-btn" id="btn-undo" title="Annuler">↩️</button>
-  <button class="tool-btn" id="btn-clear" title="Tout effacer">🗑️</button>
-  <div class="sep"></div>
-  <button class="tool-btn lock-btn" id="btn-lock" title="Verrouiller le tableau">🔓</button>
-  <button class="tool-btn" id="btn-save" title="Sauvegarder PNG">💾</button>
+<div id="canvas-wrap" style="display:none">
+  <canvas id="canvas"></canvas>
+  <div id="users-mini"></div>
 </div>
 
-<!-- QR -->
-<div id="qr-panel">
-  <h3>📱 Rejoindre</h3>
-  <img id="qr-img" alt="QR code">
-  <div id="join-url"></div>
+<div id="toolbar" style="display:none">
+  <button class="tbtn active" id="btn-pen">✏️</button>
+  <button class="tbtn" id="btn-marker">🖊️</button>
+  <button class="tbtn" id="btn-text">⌨️</button>
+  <button class="tbtn" id="btn-eraser">🧹</button>
+  <div class="sep"></div>
+  <div id="colors"></div>
+  <div class="sep"></div>
+  <div id="size-wrap"><span style="font-size:10px;color:#64748b">Taille</span>
+    <input type="range" id="size-slider" min="2" max="40" value="6"></div>
+  <div class="sep"></div>
+  <button class="tbtn" id="btn-undo">↩️</button>
 </div>
-
-<div id="toast-container"></div>
 
 <!-- Modal texte -->
 <div id="text-modal">
   <div class="modal-box">
     <h3>⌨️ Ajouter du texte</h3>
-    <textarea id="text-input" placeholder="Tapez votre texte ici..."></textarea>
-    <div class="size-row">
-      Taille : <input type="range" id="text-size" min="16" max="80" value="32" style="flex:1">
-      <span id="text-size-val">32px</span>
-    </div>
+    <textarea id="text-input-m" placeholder="Tapez votre texte..."></textarea>
     <div class="modal-actions">
-      <button class="modal-btn cancel" id="text-cancel">Annuler</button>
-      <button class="modal-btn primary" id="text-confirm">Ajouter</button>
+      <button class="modal-btn cancel" id="text-cancel-m">Annuler</button>
+      <button class="modal-btn primary" id="text-confirm-m">Ajouter</button>
     </div>
   </div>
 </div>
 
 <script>
-const SESSION_ID = new URLSearchParams(location.search).get('session') || 'default';
-const WS_PROTO = location.protocol === 'https:' ? 'wss://' : 'ws://';
-const WS_URL = `${WS_PROTO}${location.host}/ws?session=${SESSION_ID}&uid=teacher-${Math.random().toString(36).slice(2,6)}&name=Professeur&role=teacher`;
+const params=new URLSearchParams(location.search);
+const SESSION_ID=params.get('session')||'default';
+const MY_UID='mob-'+Math.random().toString(36).slice(2,8);
+const PALETTE=['#FFFFFF','#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#FF8B94','#6C5CE7','#00B4D8','#F4A261','#2DC653'];
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+let myColor='#FFFFFF', myName='Anonyme', tool='pen', brushSize=6, ws, myAssignedColor;
+let isLocked=false, allTexts=[];
 
-function resize() {
-  const d = ctx.getImageData(0,0,canvas.width||1,canvas.height||1);
-  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-  ctx.putImageData(d,0,0); ctx.lineCap='round'; ctx.lineJoin='round';
-  redrawAll(allStrokes);
-}
+const canvas=document.getElementById('canvas'); const ctx=canvas.getContext('2d');
+function resize(){ const w=document.getElementById('canvas-wrap');
+  const old=ctx.getImageData(0,0,canvas.width||1,canvas.height||1);
+  canvas.width=w.clientWidth; canvas.height=w.clientHeight;
+  ctx.putImageData(old,0,0); ctx.lineCap='round'; ctx.lineJoin='round'; }
+window.addEventListener('resize',resize);
 
-// État local
-let allStrokes = [];
-let allTexts = [];
-let tool = 'pen', brushSize = 4, myColor = '#FFFFFF';
-let drawing = false, lastX=0, lastY=0, currentStroke=null;
-let isLocked = false;
-const PALETTE = ['#FFFFFF','#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#6C5CE7','#00B4D8','#F4A261'];
+let drawing=false,lastX=0,lastY=0,currentStroke=null;
+function getPos(e){ const r=canvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [t.clientX-r.left,t.clientY-r.top]; }
+function normX(x){return x/canvas.width;} function normY(y){return y/canvas.height;}
 
-// Palette couleurs
-const cp = document.getElementById('color-pick');
-PALETTE.forEach((c,i) => {
-  const d = document.createElement('div');
-  d.className = 'cdot' + (i===0?' sel':''); d.style.background = c;
-  d.onclick = () => { myColor=c; document.querySelectorAll('.cdot').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); };
-  cp.appendChild(d);
-});
-
-document.getElementById('btn-pen').onclick    = () => setTool('pen');
-document.getElementById('btn-marker').onclick = () => setTool('marker');
-document.getElementById('btn-eraser').onclick = () => setTool('eraser');
-document.getElementById('btn-text').onclick   = () => openTextModal();
-document.getElementById('size-slider').oninput = e => brushSize = +e.target.value;
-document.getElementById('btn-undo').onclick   = () => ws?.send(JSON.stringify({type:'undo'}));
-document.getElementById('btn-clear').onclick  = () => { if(confirm('Effacer tout le tableau ?')) ws?.send(JSON.stringify({type:'clear'})); };
-document.getElementById('btn-save').onclick   = saveImage;
-document.getElementById('btn-lock').onclick   = toggleLock;
-
-function setTool(t){ tool=t; document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active')); const b=document.getElementById('btn-'+t); if(b)b.classList.add('active'); }
-
-function toggleLock(){ isLocked=!isLocked; ws?.send(JSON.stringify({type:'lock', locked:isLocked})); }
-
-// ── Dessin ──
-function getPos(e){ const r=canvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [t.clientX-r.left, t.clientY-r.top]; }
-
-canvas.addEventListener('pointerdown', e => {
-  if(e.target!==canvas) return;
-  if(tool==='text'){ openTextModalAt(...getPos(e)); return; }
+canvas.addEventListener('pointerdown',e=>{
+  e.preventDefault(); if(isLocked) return;
+  if(tool==='text'){ openTextAt(...getPos(e)); return; }
   drawing=true; [lastX,lastY]=getPos(e);
-  currentStroke={points:[[lastX,lastY]], tool, size:brushSize, color:myColor};
+  const c=tool==='eraser'?'#0f172a':(myAssignedColor||myColor);
+  currentStroke={points:[[lastX,lastY]],tool,size:brushSize,color:c};
 });
-canvas.addEventListener('pointermove', e => {
+canvas.addEventListener('pointermove',e=>{
+  e.preventDefault();
+  if(ws&&ws.readyState===1&&!isLocked){ const[px,py]=getPos(e); ws.send(JSON.stringify({type:'pointer',x:normX(px),y:normY(py)})); }
   if(!drawing) return;
-  const [x,y]=getPos(e);
-  drawSeg(lastX,lastY,x,y,myColor,brushSize,tool);
+  const[x,y]=getPos(e); drawSeg(lastX,lastY,x,y,myAssignedColor||myColor,brushSize,tool);
   currentStroke.points.push([x,y]); lastX=x; lastY=y;
 });
-canvas.addEventListener('pointerup', () => {
-  if(!drawing||!currentStroke) return; drawing=false;
-  ws?.send(JSON.stringify({type:'stroke', data:currentStroke}));
+canvas.addEventListener('pointerup',e=>{
+  e.preventDefault(); if(!drawing||!currentStroke) return; drawing=false;
+  if(ws&&ws.readyState===1){
+    // Envoyer coordonnées normalisées multipliées par taille écran de référence
+    const scaled={...currentStroke, points:currentStroke.points.map(([x,y])=>[
+      x/canvas.width*window.screen.width, y/canvas.height*window.screen.height])};
+    ws.send(JSON.stringify({type:'stroke',data:scaled, color:myAssignedColor||myColor}));
+  }
   currentStroke=null;
 });
 
 function drawSeg(x0,y0,x1,y1,color,size,t){
-  ctx.globalAlpha = t==='marker'?0.4:1;
-  ctx.strokeStyle = t==='eraser'?'#0f172a':color;
-  ctx.lineWidth = size;
-  ctx.globalCompositeOperation = t==='eraser'?'destination-out':'source-over';
+  ctx.globalAlpha=t==='marker'?.4:1; ctx.strokeStyle=t==='eraser'?'#0f172a':color;
+  ctx.lineWidth=size; ctx.globalCompositeOperation=t==='eraser'?'destination-out':'source-over';
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
   ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
 }
 function drawStroke(s){
   if(!s.points||s.points.length<2) return;
-  ctx.globalAlpha=s.tool==='marker'?0.4:1;
-  ctx.strokeStyle=s.tool==='eraser'?'#0f172a':(s.color||'#fff');
+  // remettre à l'échelle de cet écran
+  const pts=s.points.map(([x,y])=>[x/window.screen.width*canvas.width, y/window.screen.height*canvas.height]);
+  ctx.globalAlpha=s.tool==='marker'?.4:1; ctx.strokeStyle=s.tool==='eraser'?'#0f172a':(s.color||'#fff');
   ctx.lineWidth=s.size||4; ctx.lineCap='round'; ctx.lineJoin='round';
   ctx.globalCompositeOperation=s.tool==='eraser'?'destination-out':'source-over';
-  ctx.beginPath(); ctx.moveTo(s.points[0][0],s.points[0][1]);
-  for(let i=1;i<s.points.length;i++) ctx.lineTo(s.points[i][0],s.points[i][1]);
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
   ctx.stroke(); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
 }
-function redrawAll(strokes){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(const s of strokes) drawStroke(s);
-}
+function redrawAll(strokes){ ctx.clearRect(0,0,canvas.width,canvas.height); for(const s of strokes) drawStroke(s); }
 
-// ── Texte ──
-const textModal = document.getElementById('text-modal');
-const textInput = document.getElementById('text-input');
-let pendingTextPos = null;
-document.getElementById('text-size').oninput = e => document.getElementById('text-size-val').textContent = e.target.value+'px';
-document.getElementById('text-cancel').onclick = () => textModal.classList.remove('show');
-document.getElementById('text-confirm').onclick = confirmText;
-textInput.addEventListener('keydown', e => { if(e.key==='Enter'&&e.ctrlKey) confirmText(); });
-
-function openTextModal(){ openTextModalAt(window.innerWidth/2-100, window.innerHeight/2); }
-function openTextModalAt(x,y){
-  pendingTextPos={x,y}; textInput.value=''; textModal.classList.add('show');
-  setTimeout(()=>textInput.focus(),50);
-}
+// Texte
+const textModal=document.getElementById('text-modal'); const textInput=document.getElementById('text-input-m');
+let pendingPos=null;
+document.getElementById('text-cancel-m').onclick=()=>textModal.classList.remove('show');
+document.getElementById('text-confirm-m').onclick=confirmText;
+function openTextAt(x,y){ if(isLocked) return; pendingPos={x:x/canvas.width*window.screen.width,y:y/canvas.height*window.screen.height};
+  textInput.value=''; textModal.classList.add('show'); setTimeout(()=>textInput.focus(),50); }
 function confirmText(){
-  const content=textInput.value.trim(); if(!content){ textModal.classList.remove('show'); return; }
-  const size=+document.getElementById('text-size').value;
-  const txt={ id:'t'+Date.now()+Math.random().toString(36).slice(2,5),
-    x:pendingTextPos.x, y:pendingTextPos.y, content, size, color:myColor };
-  ws?.send(JSON.stringify({type:'text', data:txt}));
-  textModal.classList.remove('show');
+  const content=textInput.value.trim(); if(!content){textModal.classList.remove('show');return;}
+  const txt={id:'t'+Date.now()+Math.random().toString(36).slice(2,5),
+    x:pendingPos.x, y:pendingPos.y, content, size:28, color:myAssignedColor||myColor};
+  ws?.send(JSON.stringify({type:'text',data:txt})); textModal.classList.remove('show');
 }
-
 function renderText(t){
   let el=document.getElementById('txt-'+t.id);
-  if(!el){
-    el=document.createElement('div'); el.className='text-el'; el.id='txt-'+t.id;
-    document.body.appendChild(el);
-    makeTextDraggable(el, t);
-  }
-  el.style.left=t.x+'px'; el.style.top=t.y+'px';
-  el.style.fontSize=(t.size||32)+'px'; el.style.color=t.color||'#fff';
-  el.innerHTML = t.content.replace(/</g,'&lt;') + `<span class="author-tag">${t.name||''}</span>`;
-}
-function makeTextDraggable(el, t){
-  let dragging=false, ox=0, oy=0;
-  el.addEventListener('pointerdown', e => {
-    dragging=true; ox=e.clientX-t.x; oy=e.clientY-t.y; el.setPointerCapture(e.pointerId); e.stopPropagation();
-  });
-  el.addEventListener('pointermove', e => {
-    if(!dragging) return;
-    t.x=e.clientX-ox; t.y=e.clientY-oy;
-    el.style.left=t.x+'px'; el.style.top=t.y+'px';
-  });
-  el.addEventListener('pointerup', e => {
-    if(!dragging) return; dragging=false;
-    ws?.send(JSON.stringify({type:'text_update', data:{id:t.id, x:t.x, y:t.y}}));
-  });
+  if(!el){ el=document.createElement('div'); el.className='text-el'; el.id='txt-'+t.id;
+    document.getElementById('canvas-wrap').appendChild(el); }
+  el.style.left=(t.x/window.screen.width*canvas.width)+'px';
+  el.style.top=(t.y/window.screen.height*canvas.height)+'px';
+  el.style.fontSize=((t.size||28)/window.screen.width*canvas.width*1.5)+'px';
+  el.style.color=t.color||'#fff';
+  el.innerHTML=t.content.replace(/</g,'&lt;')+`<span class="author-tag">${t.name||''}</span>`;
 }
 function clearAllTexts(){ document.querySelectorAll('.text-el').forEach(e=>e.remove()); allTexts=[]; }
 
-// ── WebSocket ──
-let ws; const statusDot=document.getElementById('status-dot'); const pointers={};
+// Welcome
+document.getElementById('name-input').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('join-btn').click(); });
+document.getElementById('join-btn').onclick=()=>{
+  const n=document.getElementById('name-input').value.trim();
+  if(!n){ document.getElementById('name-input').placeholder='Entrez votre prénom !'; return; }
+  myName=n;
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('header').style.display='flex';
+  document.getElementById('canvas-wrap').style.display='block';
+  document.getElementById('toolbar').style.display='flex';
+  resize(); buildPalette(); connect();
+};
+
+function buildPalette(){
+  const c=document.getElementById('colors');
+  PALETTE.forEach(col=>{ const d=document.createElement('div');
+    d.className='color-dot'+(col===myColor?' selected':''); d.style.background=col;
+    d.onclick=()=>{ myColor=col; document.querySelectorAll('.color-dot').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); };
+    c.appendChild(d); });
+}
+
+document.getElementById('btn-pen').onclick=()=>setTool('pen');
+document.getElementById('btn-marker').onclick=()=>setTool('marker');
+document.getElementById('btn-eraser').onclick=()=>setTool('eraser');
+document.getElementById('btn-text').onclick=()=>{ if(!isLocked) openTextAt(canvas.width/2,canvas.height/3); };
+document.getElementById('size-slider').oninput=e=>brushSize=+e.target.value;
+document.getElementById('btn-undo').onclick=()=>ws?.send(JSON.stringify({type:'undo'}));
+function setTool(t){ tool=t; document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active')); const b=document.getElementById('btn-'+t); if(b)b.classList.add('active'); }
+
 function connect(){
-  ws=new WebSocket(WS_URL);
-  ws.onopen=()=>statusDot.classList.add('connected');
+  const wsProto=location.protocol==='https:'?'wss://':'ws://';
+  const wsUrl=`${wsProto}${location.host}/ws?session=${SESSION_ID}&uid=${MY_UID}&name=${encodeURIComponent(myName)}&role=student`;
+  ws=new WebSocket(wsUrl);
+  const status=document.getElementById('conn-status');
+  ws.onopen=()=>{ status.textContent='● Connecté'; status.className='ok'; };
   ws.onmessage=({data})=>{
     const m=JSON.parse(data);
     if(m.type==='init'){
-      allStrokes=m.strokes||[]; allTexts=m.texts||[];
-      redrawAll(allStrokes);
-      clearAllTexts(); allTexts.forEach(renderText);
-      updateStudents(m.users); setLockUI(m.locked);
-    } else if(m.type==='stroke'){ allStrokes.push(m.stroke); drawStroke(m.stroke); }
-    else if(m.type==='redraw'){ allStrokes=m.strokes||[]; redrawAll(allStrokes);
-      clearAllTexts(); (m.texts||[]).forEach(t=>{allTexts.push(t);renderText(t);}); }
-    else if(m.type==='clear'){ ctx.clearRect(0,0,canvas.width,canvas.height); allStrokes=[]; clearAllTexts(); }
+      myAssignedColor=m.color;
+      document.getElementById('my-color-dot').style.background=m.color;
+      document.getElementById('my-name-label').textContent=m.name;
+      redrawAll(m.strokes||[]); clearAllTexts(); (m.texts||[]).forEach(t=>{allTexts.push(t);renderText(t);});
+      updateUsers(m.users); setLock(m.locked);
+    }
+    else if(m.type==='stroke'){ drawStroke(m.stroke); }
+    else if(m.type==='redraw'){ redrawAll(m.strokes||[]); clearAllTexts(); (m.texts||[]).forEach(t=>{allTexts.push(t);renderText(t);}); }
+    else if(m.type==='clear'){ ctx.clearRect(0,0,canvas.width,canvas.height); clearAllTexts(); }
     else if(m.type==='text'){ allTexts.push(m.text); renderText(m.text); }
     else if(m.type==='text_update'){ const t=allTexts.find(x=>x.id===m.text.id); if(t){Object.assign(t,m.text);renderText(t);} }
-    else if(m.type==='pointer'){ updatePointer(m); }
-    else if(m.type==='lock'){ setLockUI(m.locked); }
-    else if(m.type==='user_join'){ updateStudents(m.users); if(m.role!=='teacher') toast(`${m.name} a rejoint 🎉`); }
-    else if(m.type==='user_leave'){ updateStudents(m.users); removePointer(m.userId); }
+    else if(m.type==='lock'){ setLock(m.locked); }
+    else if(m.type==='kicked'){ document.body.innerHTML='<div style="display:flex;height:100dvh;align-items:center;justify-content:center;color:#ef4444;font-size:20px;text-align:center;padding:40px">Vous avez été déconnecté par le professeur.</div>'; ws.close(); }
+    else if(m.type==='user_join'||m.type==='user_leave'){ updateUsers(m.users); }
   };
-  ws.onclose=()=>{ statusDot.classList.remove('connected'); setTimeout(connect,2000); };
+  ws.onclose=()=>{ status.textContent='● Déconnecté'; status.className=''; setTimeout(connect,2000); };
 }
 
-function setLockUI(locked){
+function setLock(locked){
   isLocked=locked;
-  const ls=document.getElementById('lock-status');
-  const lb=document.getElementById('btn-lock');
-  if(locked){ ls.className='locked'; ls.textContent='🔒 Tableau verrouillé';
-    lb.textContent='🔒'; lb.classList.add('locked'); }
-  else { ls.className='unlocked'; ls.textContent='🔓 Tableau ouvert';
-    lb.textContent='🔓'; lb.classList.remove('locked'); }
+  document.getElementById('lock-banner').classList.toggle('show',locked);
+  document.getElementById('canvas').classList.toggle('locked',locked);
 }
 
-// ── Panneau élèves ──
-function updateStudents(users){
-  const list=document.getElementById('students-list');
-  const students=Object.entries(users).filter(([id,u])=>u.role!=='teacher');
-  document.getElementById('student-count').textContent=students.length;
-  if(students.length===0){ list.innerHTML='<div class="empty-students">Aucun élève connecté.<br>Partagez le QR code →</div>'; return; }
-  list.innerHTML='';
-  students.forEach(([id,u])=>{
-    const row=document.createElement('div'); row.className='student-row';
-    row.innerHTML=`<div class="student-dot" style="background:${u.color}"></div>
-      <span class="student-name">${u.name}</span>
-      <div class="student-actions">
-        <button class="mini-btn" title="Effacer ses traits" data-clear="${id}">🧹</button>
-        <button class="mini-btn" title="Exclure" data-kick="${id}">✖</button>
-      </div>`;
-    list.appendChild(row);
-  });
-  list.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>ws?.send(JSON.stringify({type:'clear_user',targetId:b.dataset.clear})));
-  list.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>{ if(confirm('Exclure cet élève ?')) ws?.send(JSON.stringify({type:'kick',targetId:b.dataset.kick})); });
-}
-
-// ── Pointeurs ──
-function updatePointer(m){
-  if(!pointers[m.userId]){
-    const el=document.createElement('div'); el.className='remote-pointer'; el.id='ptr-'+m.userId;
-    el.innerHTML=`<div class="remote-pointer-dot" style="background:${m.color}"></div><div class="remote-pointer-label">${m.name}</div>`;
-    document.body.appendChild(el); pointers[m.userId]=el;
+function updateUsers(users){
+  const mini=document.getElementById('users-mini'); mini.innerHTML='';
+  for(const[uid,u] of Object.entries(users)){
+    const row=document.createElement('div'); row.className='u-row';
+    const label=u.role==='teacher'?'👨‍🏫 '+u.name:u.name;
+    row.innerHTML=`<div class="u-dot" style="background:${u.color}"></div><span>${label}</span>`;
+    mini.appendChild(row);
   }
-  const el=pointers[m.userId];
-  el.style.left=(m.x*window.innerWidth)+'px'; el.style.top=(m.y*window.innerHeight)+'px';
-  clearTimeout(el._t); el._t=setTimeout(()=>el.style.opacity='0',3000); el.style.opacity='1';
 }
-function removePointer(id){ if(pointers[id]){pointers[id].remove();delete pointers[id];} }
-
-// ── QR ──
-fetch('/api/session?id='+SESSION_ID).then(r=>r.json()).then(d=>{
-  document.getElementById('join-url').textContent=d.joinUrl;
-  document.getElementById('qr-img').src='https://api.qrserver.com/v1/create-qr-code/?size=156x156&data='+encodeURIComponent(d.joinUrl);
-});
-
-function toast(msg){ const e=document.createElement('div'); e.className='toast'; e.textContent=msg;
-  document.getElementById('toast-container').appendChild(e); setTimeout(()=>e.remove(),3000); }
-
-function saveImage(){
-  // Fusionne canvas + textes dans une image
-  const tmp=document.createElement('canvas'); tmp.width=canvas.width; tmp.height=canvas.height;
-  const tc=tmp.getContext('2d'); tc.fillStyle='#0f172a'; tc.fillRect(0,0,tmp.width,tmp.height);
-  tc.drawImage(canvas,0,0);
-  allTexts.forEach(t=>{ tc.fillStyle=t.color||'#fff'; tc.font=(t.size||32)+'px Segoe UI, Arial';
-    t.content.split('\n').forEach((line,i)=>tc.fillText(line,t.x,t.y+(t.size||32)*(i+0.8))); });
-  const link=document.createElement('a');
-  link.download='flipcollab-'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.png';
-  link.href=tmp.toDataURL('image/png'); link.click(); toast('Image sauvegardée ✅');
-}
-
-window.addEventListener('resize', resize);
-resize(); connect();
 </script>
 </body>
 </html>
