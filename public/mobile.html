@@ -3,110 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>FlipCollab – Mobile</title>
+<title>FlipCollab – Élève</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { background: #0f172a; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; height: 100dvh; display: flex; flex-direction: column; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#0f172a; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; height:100dvh; display:flex; flex-direction:column; }
 
-  /* Écran d'accueil */
-  #welcome {
-    position: fixed; inset: 0; background: #0f172a;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 20px; padding: 32px; z-index: 999;
-  }
-  .logo-big { font-size: 36px; font-weight: 900; color: #60a5fa; }
-  .logo-big span { color: #34d399; }
-  .subtitle { color: #64748b; font-size: 15px; text-align: center; }
-  #name-input {
-    width: 100%; padding: 16px; border-radius: 12px;
-    border: 2px solid #1e40af; background: #1e293b;
-    color: white; font-size: 18px; text-align: center; outline: none;
-  }
-  #name-input:focus { border-color: #60a5fa; }
-  #join-btn {
-    width: 100%; padding: 16px; border-radius: 12px;
-    background: linear-gradient(135deg, #1e40af, #3b82f6);
-    border: none; color: white; font-size: 18px; font-weight: 700;
-    cursor: pointer; transition: transform .15s;
-  }
-  #join-btn:active { transform: scale(0.97); }
+  #welcome { position:fixed; inset:0; background:#0f172a; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:20px; padding:32px; z-index:999; }
+  .logo-big { font-size:36px; font-weight:900; color:#60a5fa; }
+  .logo-big span { color:#34d399; }
+  .subtitle { color:#64748b; font-size:15px; text-align:center; }
+  #name-input { width:100%; padding:16px; border-radius:12px; border:2px solid #1e40af;
+    background:#1e293b; color:#fff; font-size:18px; text-align:center; outline:none; }
+  #name-input:focus { border-color:#60a5fa; }
+  #join-btn { width:100%; padding:16px; border-radius:12px;
+    background:linear-gradient(135deg,#1e40af,#3b82f6); border:none; color:#fff;
+    font-size:18px; font-weight:700; cursor:pointer; transition:transform .15s; }
+  #join-btn:active { transform:scale(.97); }
 
-  /* Header */
-  #header {
-    background: rgba(15,23,42,0.98); border-bottom: 2px solid #1e40af;
-    padding: 10px 16px; display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-  }
-  .logo-sm { font-size: 16px; font-weight: 800; color: #60a5fa; }
-  .logo-sm span { color: #34d399; }
-  #my-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  #my-name-label { color: #e2e8f0; font-size: 14px; flex: 1; }
-  #conn-status { font-size: 11px; color: #64748b; }
-  #conn-status.ok { color: #34d399; }
+  #header { background:rgba(15,23,42,.98); border-bottom:2px solid #1e40af;
+    padding:10px 16px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .logo-sm { font-size:16px; font-weight:800; color:#60a5fa; }
+  .logo-sm span { color:#34d399; }
+  #my-color-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  #my-name-label { color:#e2e8f0; font-size:14px; flex:1; }
+  #conn-status { font-size:11px; color:#64748b; }
+  #conn-status.ok { color:#34d399; }
 
-  /* Canvas zone */
-  #canvas-wrap { flex: 1; position: relative; overflow: hidden; }
-  #canvas { display: block; touch-action: none; cursor: crosshair; }
+  #lock-banner { display:none; background:#ef4444; color:#fff; text-align:center;
+    padding:8px; font-size:14px; font-weight:600; flex-shrink:0; }
+  #lock-banner.show { display:block; }
 
-  /* Toolbar mobile */
-  #toolbar {
-    background: #0f172a; border-top: 1px solid #1e293b;
-    padding: 10px 12px; display: flex; gap: 10px; align-items: center;
-    flex-shrink: 0; overflow-x: auto;
-  }
-  .tbtn {
-    min-width: 44px; height: 44px; border-radius: 10px;
-    border: none; background: #1e293b; color: #e2e8f0;
-    font-size: 18px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center; flex-shrink: 0;
-    transition: all .15s;
-  }
-  .tbtn.active { background: #1e40af; }
-  .tbtn:active { transform: scale(0.9); }
+  #canvas-wrap { flex:1; position:relative; overflow:hidden; }
+  #canvas { display:block; touch-action:none; cursor:crosshair; }
+  #canvas.locked { opacity:.5; pointer-events:none; }
 
-  /* Palette couleurs */
-  #colors { display: flex; gap: 8px; align-items: center; }
-  .color-dot {
-    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-    border: 3px solid transparent; transition: all .15s; flex-shrink: 0;
-  }
-  .color-dot.selected { border-color: white; transform: scale(1.2); }
+  #toolbar { background:#0f172a; border-top:1px solid #1e293b; padding:10px 12px;
+    display:flex; gap:10px; align-items:center; flex-shrink:0; overflow-x:auto; }
+  .tbtn { min-width:44px; height:44px; border-radius:10px; border:none; background:#1e293b;
+    color:#e2e8f0; font-size:18px; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; transition:.15s; }
+  .tbtn.active { background:#1e40af; }
+  .tbtn:active { transform:scale(.9); }
+  #colors { display:flex; gap:8px; align-items:center; }
+  .color-dot { width:28px; height:28px; border-radius:50%; cursor:pointer;
+    border:3px solid transparent; transition:.15s; flex-shrink:0; }
+  .color-dot.selected { border-color:#fff; transform:scale(1.2); }
+  #size-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  #size-slider { -webkit-appearance:none; width:70px; height:4px; background:#334155;
+    border-radius:2px; outline:none; }
+  #size-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px;
+    border-radius:50%; background:#60a5fa; }
+  .sep { width:1px; height:32px; background:#334155; flex-shrink:0; }
 
-  /* Taille pinceau */
-  #size-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  #size-slider {
-    -webkit-appearance: none; width: 70px; height: 4px;
-    background: #334155; border-radius: 2px; outline: none;
-  }
-  #size-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px;
-    border-radius: 50%; background: #60a5fa;
-  }
+  #users-mini { position:absolute; top:8px; right:8px; background:rgba(15,23,42,.85);
+    border-radius:10px; padding:6px 10px; display:flex; flex-direction:column; gap:4px;
+    font-size:11px; color:#94a3b8; pointer-events:none; }
+  .u-row { display:flex; align-items:center; gap:5px; }
+  .u-dot { width:8px; height:8px; border-radius:50%; }
 
-  .sep { width: 1px; height: 32px; background: #334155; flex-shrink: 0; }
+  /* Modal texte */
+  #text-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:500;
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  #text-modal.show { display:flex; }
+  .modal-box { background:#1e293b; border-radius:16px; padding:20px; width:100%; max-width:380px; border:1px solid #334155; }
+  .modal-box h3 { color:#60a5fa; margin-bottom:14px; }
+  #text-input-m { width:100%; min-height:80px; padding:12px; border-radius:10px;
+    border:2px solid #334155; background:#0f172a; color:#fff; font-size:18px; resize:vertical; outline:none; }
+  #text-input-m:focus { border-color:#60a5fa; }
+  .modal-actions { display:flex; gap:10px; margin-top:14px; }
+  .modal-btn { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-size:15px; font-weight:600; }
+  .modal-btn.primary { background:#1e40af; color:#fff; }
+  .modal-btn.cancel { background:#334155; color:#e2e8f0; }
 
-  /* Users panel */
-  #users-mini {
-    position: absolute; top: 8px; right: 8px;
-    background: rgba(15,23,42,0.85); border-radius: 10px;
-    padding: 6px 10px; display: flex; flex-direction: column; gap: 4px;
-    font-size: 11px; color: #94a3b8; pointer-events: none;
-  }
-  .u-row { display: flex; align-items: center; gap: 5px; }
-  .u-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .text-el { position:absolute; color:#fff; cursor:move; padding:2px 4px;
+    white-space:pre-wrap; max-width:90%; user-select:none; z-index:50; }
+  .text-el .author-tag { font-size:9px; opacity:.5; display:block; }
 </style>
 </head>
 <body>
 
-<!-- Écran d'accueil -->
 <div id="welcome">
   <div class="logo-big">Flip<span>Collab</span></div>
-  <div class="subtitle">Dessinez sur le grand écran<br>depuis votre téléphone</div>
+  <div class="subtitle">Dessinez et écrivez sur le grand écran<br>depuis votre téléphone</div>
   <input id="name-input" type="text" placeholder="Votre prénom" maxlength="20" autocomplete="off">
   <button id="join-btn">Rejoindre 🚀</button>
 </div>
 
-<!-- Header -->
 <div id="header" style="display:none">
   <div class="logo-sm">Flip<span>Collab</span></div>
   <div id="my-color-dot"></div>
@@ -114,236 +97,196 @@
   <div id="conn-status">Connexion...</div>
 </div>
 
-<!-- Canvas -->
+<div id="lock-banner">🔒 Le professeur a verrouillé le tableau</div>
+
 <div id="canvas-wrap" style="display:none">
   <canvas id="canvas"></canvas>
   <div id="users-mini"></div>
 </div>
 
-<!-- Toolbar -->
 <div id="toolbar" style="display:none">
   <button class="tbtn active" id="btn-pen">✏️</button>
   <button class="tbtn" id="btn-marker">🖊️</button>
+  <button class="tbtn" id="btn-text">⌨️</button>
   <button class="tbtn" id="btn-eraser">🧹</button>
   <div class="sep"></div>
   <div id="colors"></div>
   <div class="sep"></div>
-  <div id="size-wrap">
-    <span style="font-size:10px;color:#64748b">Taille</span>
-    <input type="range" id="size-slider" min="2" max="40" value="6">
-  </div>
+  <div id="size-wrap"><span style="font-size:10px;color:#64748b">Taille</span>
+    <input type="range" id="size-slider" min="2" max="40" value="6"></div>
   <div class="sep"></div>
   <button class="tbtn" id="btn-undo">↩️</button>
-  <button class="tbtn" id="btn-clear">🗑️</button>
+</div>
+
+<!-- Modal texte -->
+<div id="text-modal">
+  <div class="modal-box">
+    <h3>⌨️ Ajouter du texte</h3>
+    <textarea id="text-input-m" placeholder="Tapez votre texte..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="text-cancel-m">Annuler</button>
+      <button class="modal-btn primary" id="text-confirm-m">Ajouter</button>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── Params ────────────────────────────────────────────────────
-const params = new URLSearchParams(location.search);
-const SESSION_ID = params.get('session') || 'default';
-const MY_UID = 'mob-' + Math.random().toString(36).slice(2, 8);
+const params=new URLSearchParams(location.search);
+const SESSION_ID=params.get('session')||'default';
+const MY_UID='mob-'+Math.random().toString(36).slice(2,8);
+const PALETTE=['#FFFFFF','#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#FF8B94','#6C5CE7','#00B4D8','#F4A261','#2DC653'];
 
-// ── Couleurs disponibles ──────────────────────────────────────
-const PALETTE = ['#FFFFFF','#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF',
-                 '#FF8B94','#6C5CE7','#00B4D8','#F4A261','#2DC653'];
+let myColor='#FFFFFF', myName='Anonyme', tool='pen', brushSize=6, ws, myAssignedColor;
+let isLocked=false, allTexts=[];
 
-let myColor = '#FFFFFF';
-let myName  = 'Anonyme';
-let tool    = 'pen';
-let brushSize = 6;
-let ws, myAssignedColor;
+const canvas=document.getElementById('canvas'); const ctx=canvas.getContext('2d');
+function resize(){ const w=document.getElementById('canvas-wrap');
+  const old=ctx.getImageData(0,0,canvas.width||1,canvas.height||1);
+  canvas.width=w.clientWidth; canvas.height=w.clientHeight;
+  ctx.putImageData(old,0,0); ctx.lineCap='round'; ctx.lineJoin='round'; }
+window.addEventListener('resize',resize);
 
-// ── Canvas ────────────────────────────────────────────────────
-const canvas = document.getElementById('canvas');
-const ctx    = canvas.getContext('2d');
+let drawing=false,lastX=0,lastY=0,currentStroke=null;
+function getPos(e){ const r=canvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [t.clientX-r.left,t.clientY-r.top]; }
+function normX(x){return x/canvas.width;} function normY(y){return y/canvas.height;}
 
-function resize() {
-  const wrap = document.getElementById('canvas-wrap');
-  const old  = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  canvas.width  = wrap.clientWidth;
-  canvas.height = wrap.clientHeight;
-  ctx.putImageData(old, 0, 0);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-}
-window.addEventListener('resize', resize);
-
-// ── Drawing ────────────────────────────────────────────────────
-let drawing = false, lastX = 0, lastY = 0, currentStroke = null;
-
-function getPos(e) {
-  const r = canvas.getBoundingClientRect();
-  const t = e.touches ? e.touches[0] : e;
-  return [t.clientX - r.left, t.clientY - r.top];
-}
-
-function normX(x) { return x / canvas.width; }
-function normY(y) { return y / canvas.height; }
-
-canvas.addEventListener('pointerdown', e => {
+canvas.addEventListener('pointerdown',e=>{
+  e.preventDefault(); if(isLocked) return;
+  if(tool==='text'){ openTextAt(...getPos(e)); return; }
+  drawing=true; [lastX,lastY]=getPos(e);
+  const c=tool==='eraser'?'#0f172a':(myAssignedColor||myColor);
+  currentStroke={points:[[lastX,lastY]],tool,size:brushSize,color:c};
+});
+canvas.addEventListener('pointermove',e=>{
   e.preventDefault();
-  drawing = true;
-  [lastX, lastY] = getPos(e);
-  const c = tool === 'eraser' ? '#000' : (myAssignedColor || myColor);
-  currentStroke = { points: [[lastX, lastY]], tool, size: brushSize, color: c };
+  if(ws&&ws.readyState===1&&!isLocked){ const[px,py]=getPos(e); ws.send(JSON.stringify({type:'pointer',x:normX(px),y:normY(py)})); }
+  if(!drawing) return;
+  const[x,y]=getPos(e); drawSeg(lastX,lastY,x,y,myAssignedColor||myColor,brushSize,tool);
+  currentStroke.points.push([x,y]); lastX=x; lastY=y;
 });
-
-canvas.addEventListener('pointermove', e => {
-  e.preventDefault();
-  // Envoyer position du pointeur (normalisée)
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({ type: 'pointer', x: normX(getPos(e)[0]), y: normY(getPos(e)[1]) }));
+canvas.addEventListener('pointerup',e=>{
+  e.preventDefault(); if(!drawing||!currentStroke) return; drawing=false;
+  if(ws&&ws.readyState===1){
+    // Envoyer coordonnées normalisées multipliées par taille écran de référence
+    const scaled={...currentStroke, points:currentStroke.points.map(([x,y])=>[
+      x/canvas.width*window.screen.width, y/canvas.height*window.screen.height])};
+    ws.send(JSON.stringify({type:'stroke',data:scaled, color:myAssignedColor||myColor}));
   }
-  if (!drawing) return;
-  const [x, y] = getPos(e);
-  drawSeg(lastX, lastY, x, y, myAssignedColor || myColor, brushSize, tool);
-  currentStroke.points.push([x, y]);
-  lastX = x; lastY = y;
+  currentStroke=null;
 });
 
-canvas.addEventListener('pointerup', e => {
-  e.preventDefault();
-  if (!drawing || !currentStroke) return;
-  drawing = false;
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({ type: 'stroke', data: {
-      ...currentStroke,
-      color: myAssignedColor || myColor,
-    }}));
-  }
-  currentStroke = null;
-});
-
-function drawSeg(x0, y0, x1, y1, color, size, t) {
-  ctx.globalAlpha = t === 'marker' ? 0.4 : 1;
-  ctx.strokeStyle = t === 'eraser' ? '#000' : color;
-  ctx.lineWidth   = size;
-  ctx.globalCompositeOperation = t === 'eraser' ? 'destination-out' : 'source-over';
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+function drawSeg(x0,y0,x1,y1,color,size,t){
+  ctx.globalAlpha=t==='marker'?.4:1; ctx.strokeStyle=t==='eraser'?'#0f172a':color;
+  ctx.lineWidth=size; ctx.globalCompositeOperation=t==='eraser'?'destination-out':'source-over';
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
 }
-
-function drawStroke(s) {
-  if (!s.points || s.points.length < 2) return;
-  ctx.globalAlpha = s.tool === 'marker' ? 0.4 : 1;
-  ctx.strokeStyle = s.color || '#fff';
-  ctx.lineWidth   = s.size || 4;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.globalCompositeOperation = s.tool === 'eraser' ? 'destination-out' : 'source-over';
-  ctx.beginPath();
-  ctx.moveTo(s.points[0][0], s.points[0][1]);
-  for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
-  ctx.stroke();
-  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+function drawStroke(s){
+  if(!s.points||s.points.length<2) return;
+  // remettre à l'échelle de cet écran
+  const pts=s.points.map(([x,y])=>[x/window.screen.width*canvas.width, y/window.screen.height*canvas.height]);
+  ctx.globalAlpha=s.tool==='marker'?.4:1; ctx.strokeStyle=s.tool==='eraser'?'#0f172a':(s.color||'#fff');
+  ctx.lineWidth=s.size||4; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.globalCompositeOperation=s.tool==='eraser'?'destination-out':'source-over';
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.stroke(); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
 }
+function redrawAll(strokes){ ctx.clearRect(0,0,canvas.width,canvas.height); for(const s of strokes) drawStroke(s); }
 
-function redrawAll(strokes) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Les traits distants arrivent en coordonnées absolues du Flip — on les scale
-  for (const s of strokes) {
-    const scaled = { ...s, points: s.points.map(([x, y]) => [
-      x * canvas.width  / (s._flipW || canvas.width),
-      y * canvas.height / (s._flipH || canvas.height),
-    ])};
-    drawStroke(scaled);
-  }
+// Texte
+const textModal=document.getElementById('text-modal'); const textInput=document.getElementById('text-input-m');
+let pendingPos=null;
+document.getElementById('text-cancel-m').onclick=()=>textModal.classList.remove('show');
+document.getElementById('text-confirm-m').onclick=confirmText;
+function openTextAt(x,y){ if(isLocked) return; pendingPos={x:x/canvas.width*window.screen.width,y:y/canvas.height*window.screen.height};
+  textInput.value=''; textModal.classList.add('show'); setTimeout(()=>textInput.focus(),50); }
+function confirmText(){
+  const content=textInput.value.trim(); if(!content){textModal.classList.remove('show');return;}
+  const txt={id:'t'+Date.now()+Math.random().toString(36).slice(2,5),
+    x:pendingPos.x, y:pendingPos.y, content, size:28, color:myAssignedColor||myColor};
+  ws?.send(JSON.stringify({type:'text',data:txt})); textModal.classList.remove('show');
 }
+function renderText(t){
+  let el=document.getElementById('txt-'+t.id);
+  if(!el){ el=document.createElement('div'); el.className='text-el'; el.id='txt-'+t.id;
+    document.getElementById('canvas-wrap').appendChild(el); }
+  el.style.left=(t.x/window.screen.width*canvas.width)+'px';
+  el.style.top=(t.y/window.screen.height*canvas.height)+'px';
+  el.style.fontSize=((t.size||28)/window.screen.width*canvas.width*1.5)+'px';
+  el.style.color=t.color||'#fff';
+  el.innerHTML=t.content.replace(/</g,'&lt;')+`<span class="author-tag">${t.name||''}</span>`;
+}
+function clearAllTexts(){ document.querySelectorAll('.text-el').forEach(e=>e.remove()); allTexts=[]; }
 
-// ── Welcome screen ─────────────────────────────────────────────
-document.getElementById('name-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('join-btn').click();
-});
-
-document.getElementById('join-btn').onclick = () => {
-  const n = document.getElementById('name-input').value.trim();
-  if (!n) { document.getElementById('name-input').placeholder = 'Entrez votre prénom !'; return; }
-  myName = n;
-  document.getElementById('welcome').style.display = 'none';
-  document.getElementById('header').style.display = 'flex';
-  document.getElementById('canvas-wrap').style.display = 'block';
-  document.getElementById('toolbar').style.display = 'flex';
-  resize();
-  buildPalette();
-  connect();
+// Welcome
+document.getElementById('name-input').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('join-btn').click(); });
+document.getElementById('join-btn').onclick=()=>{
+  const n=document.getElementById('name-input').value.trim();
+  if(!n){ document.getElementById('name-input').placeholder='Entrez votre prénom !'; return; }
+  myName=n;
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('header').style.display='flex';
+  document.getElementById('canvas-wrap').style.display='block';
+  document.getElementById('toolbar').style.display='flex';
+  resize(); buildPalette(); connect();
 };
 
-// ── Palette ────────────────────────────────────────────────────
-function buildPalette() {
-  const container = document.getElementById('colors');
-  PALETTE.forEach(c => {
-    const dot = document.createElement('div');
-    dot.className = 'color-dot' + (c === myColor ? ' selected' : '');
-    dot.style.background = c;
-    dot.onclick = () => {
-      myColor = c;
-      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-      dot.classList.add('selected');
-    };
-    container.appendChild(dot);
-  });
+function buildPalette(){
+  const c=document.getElementById('colors');
+  PALETTE.forEach(col=>{ const d=document.createElement('div');
+    d.className='color-dot'+(col===myColor?' selected':''); d.style.background=col;
+    d.onclick=()=>{ myColor=col; document.querySelectorAll('.color-dot').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); };
+    c.appendChild(d); });
 }
 
-// ── Toolbar ────────────────────────────────────────────────────
-document.getElementById('btn-pen').onclick    = () => setTool('pen');
-document.getElementById('btn-marker').onclick = () => setTool('marker');
-document.getElementById('btn-eraser').onclick = () => setTool('eraser');
-document.getElementById('size-slider').oninput = e => brushSize = +e.target.value;
-document.getElementById('btn-undo').onclick   = () => ws?.send(JSON.stringify({ type:'undo' }));
-document.getElementById('btn-clear').onclick  = () => { if(confirm('Effacer ?')) ws?.send(JSON.stringify({ type:'clear' })); };
+document.getElementById('btn-pen').onclick=()=>setTool('pen');
+document.getElementById('btn-marker').onclick=()=>setTool('marker');
+document.getElementById('btn-eraser').onclick=()=>setTool('eraser');
+document.getElementById('btn-text').onclick=()=>{ if(!isLocked) openTextAt(canvas.width/2,canvas.height/3); };
+document.getElementById('size-slider').oninput=e=>brushSize=+e.target.value;
+document.getElementById('btn-undo').onclick=()=>ws?.send(JSON.stringify({type:'undo'}));
+function setTool(t){ tool=t; document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active')); const b=document.getElementById('btn-'+t); if(b)b.classList.add('active'); }
 
-function setTool(t) {
-  tool = t;
-  document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
-  document.getElementById('btn-' + t).classList.add('active');
-}
-
-// ── WebSocket ──────────────────────────────────────────────────
-function connect() {
-  const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-  const wsUrl = `${wsProto}${location.host}/ws?session=${SESSION_ID}&uid=${MY_UID}&name=${encodeURIComponent(myName)}`;
-  ws = new WebSocket(wsUrl);
-  const status = document.getElementById('conn-status');
-
-  ws.onopen = () => { status.textContent = '● Connecté'; status.className = 'ok'; };
-
-  ws.onmessage = ({ data }) => {
-    const msg = JSON.parse(data);
-
-    if (msg.type === 'init') {
-      myAssignedColor = msg.color;
-      document.getElementById('my-color-dot').style.background = msg.color;
-      document.getElementById('my-name-label').textContent = msg.name;
-      redrawAll(msg.strokes);
-      updateUsers(msg.users);
-    } else if (msg.type === 'stroke') {
-      // Adapter coordonnées Flip → mobile
-      const s = msg.stroke;
-      const scaled = { ...s, points: s.points.map(([x,y]) => [
-        x / window.screen.width  * canvas.width,
-        y / window.screen.height * canvas.height,
-      ])};
-      drawStroke(scaled);
-    } else if (msg.type === 'redraw') {
-      redrawAll(msg.strokes);
-    } else if (msg.type === 'clear') {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    } else if (msg.type === 'user_join' || msg.type === 'user_leave') {
-      updateUsers(msg.users);
+function connect(){
+  const wsProto=location.protocol==='https:'?'wss://':'ws://';
+  const wsUrl=`${wsProto}${location.host}/ws?session=${SESSION_ID}&uid=${MY_UID}&name=${encodeURIComponent(myName)}&role=student`;
+  ws=new WebSocket(wsUrl);
+  const status=document.getElementById('conn-status');
+  ws.onopen=()=>{ status.textContent='● Connecté'; status.className='ok'; };
+  ws.onmessage=({data})=>{
+    const m=JSON.parse(data);
+    if(m.type==='init'){
+      myAssignedColor=m.color;
+      document.getElementById('my-color-dot').style.background=m.color;
+      document.getElementById('my-name-label').textContent=m.name;
+      redrawAll(m.strokes||[]); clearAllTexts(); (m.texts||[]).forEach(t=>{allTexts.push(t);renderText(t);});
+      updateUsers(m.users); setLock(m.locked);
     }
+    else if(m.type==='stroke'){ drawStroke(m.stroke); }
+    else if(m.type==='redraw'){ redrawAll(m.strokes||[]); clearAllTexts(); (m.texts||[]).forEach(t=>{allTexts.push(t);renderText(t);}); }
+    else if(m.type==='clear'){ ctx.clearRect(0,0,canvas.width,canvas.height); clearAllTexts(); }
+    else if(m.type==='text'){ allTexts.push(m.text); renderText(m.text); }
+    else if(m.type==='text_update'){ const t=allTexts.find(x=>x.id===m.text.id); if(t){Object.assign(t,m.text);renderText(t);} }
+    else if(m.type==='lock'){ setLock(m.locked); }
+    else if(m.type==='kicked'){ document.body.innerHTML='<div style="display:flex;height:100dvh;align-items:center;justify-content:center;color:#ef4444;font-size:20px;text-align:center;padding:40px">Vous avez été déconnecté par le professeur.</div>'; ws.close(); }
+    else if(m.type==='user_join'||m.type==='user_leave'){ updateUsers(m.users); }
   };
-
-  ws.onclose = () => {
-    status.textContent = '● Déconnecté'; status.className = '';
-    setTimeout(connect, 2000);
-  };
+  ws.onclose=()=>{ status.textContent='● Déconnecté'; status.className=''; setTimeout(connect,2000); };
 }
 
-function updateUsers(users) {
-  const mini = document.getElementById('users-mini');
-  mini.innerHTML = '';
-  for (const [uid, u] of Object.entries(users)) {
-    const row = document.createElement('div');
-    row.className = 'u-row';
-    row.innerHTML = `<div class="u-dot" style="background:${u.color}"></div><span>${u.name}</span>`;
+function setLock(locked){
+  isLocked=locked;
+  document.getElementById('lock-banner').classList.toggle('show',locked);
+  document.getElementById('canvas').classList.toggle('locked',locked);
+}
+
+function updateUsers(users){
+  const mini=document.getElementById('users-mini'); mini.innerHTML='';
+  for(const[uid,u] of Object.entries(users)){
+    const row=document.createElement('div'); row.className='u-row';
+    const label=u.role==='teacher'?'👨‍🏫 '+u.name:u.name;
+    row.innerHTML=`<div class="u-dot" style="background:${u.color}"></div><span>${label}</span>`;
     mini.appendChild(row);
   }
 }
